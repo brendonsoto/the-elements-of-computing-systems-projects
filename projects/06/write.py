@@ -1,0 +1,5 @@
+f = open('testing.txt', 'w')
+f.write('Now this is a story all about how')
+f.write('My life got flipped upside down')
+f.write('blah')
+f.close()

@@ -1,0 +1,67 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/03/a/RAM8.hdl
+
+/**
+ * Memory of 8 registers, each 16 bit-wide. Out holds the value
+ * stored at the memory location specified by address. If load==1, then 
+ * the in value is loaded into the memory location specified by address 
+ * (the loaded value will be emitted to out from the next time step onward).
+ */
+
+CHIP RAM8 {
+    IN in[16], load, address[3];
+    OUT out[16];
+
+    PARTS:
+    // Put your code here:
+
+    /* This was too much... :(
+    // Get the not states of the addresses too
+    Not(in=address[0], out=notAddress0);
+    Not(in=address[1], out=notAddress1);
+    Not(in=address[2], out=notAddress2);
+
+    // Now build out gates to determine the 8 different states
+    And(a=notAddress1, b=notAddress0, out=and00);
+    And(a=notAddress1, b=address[0], out=and01);
+    And(a=address[1], b=notAddress0, out=and10);
+    And(a=address[1], b=address[0], out=and11);
+
+    And(a=notAddress2, b=and00, out=and000);
+    And(a=notAddress2, b=and01, out=and001);
+    And(a=notAddress2, b=and10, out=and010);
+    And(a=notAddress2, b=and11, out=and011);
+    And(a=address[2], b=and00, out=and100);
+    And(a=address[2], b=and01, out=and101);
+    And(a=address[2], b=and10, out=and110);
+    And(a=address[2], b=and11, out=and111);
+
+    // Now we can use the And gates above to determine which registers to load
+    And(a=load, b=and000, out=load000);
+    And(a=load, b=and001, out=load001);
+    And(a=load, b=and010, out=load010);
+    And(a=load, b=and011, out=load011);
+    And(a=load, b=and100, out=load100);
+    And(a=load, b=and101, out=load101);
+    And(a=load, b=and110, out=load110);
+    And(a=load, b=and111, out=load111);
+    */
+
+    /* Simpler: */
+    DMux8Way(in=load, sel=address, a=load0, b=load1, c=load2, d=load3, e=load4, f=load5, g=load6, h=load7);
+
+    // Registers
+    Register(in=in, load=load0, out=reg0);
+    Register(in=in, load=load1, out=reg1);
+    Register(in=in, load=load2, out=reg2);
+    Register(in=in, load=load3, out=reg3);
+    Register(in=in, load=load4, out=reg4);
+    Register(in=in, load=load5, out=reg5);
+    Register(in=in, load=load6, out=reg6);
+    Register(in=in, load=load7, out=reg7);
+
+    // Out
+    Mux8Way16(a=reg0, b=reg1, c=reg2, d=reg3, e=reg4, f=reg5, g=reg6, h=reg7, sel=address, out=out);
+}
