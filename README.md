@@ -1,4 +1,4 @@
-#The Elements of Computer Systems -- Projects
+# The Elements of Computer Systems -- Projects
 
 This is where I store my completed projects for the book titled above.
 This is the same book used in the From Nand 2 Tetris course.
