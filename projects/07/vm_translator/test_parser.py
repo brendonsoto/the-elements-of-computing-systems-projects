@@ -21,6 +21,12 @@ class TestParser(unittest.TestCase):
                 ]
         instructions = parser.get_instructions(lines)
 
+    def test_translate_pop(self):
+        line = 'pop argument 1'
+        expected = { 'type': 'pop', 'value': { 'base': 'argument', 'index': '1' } }
+        translation = parser.translate_line(line)
+        self.assertDictEqual(translation, expected)
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestParser('test_read_file'))

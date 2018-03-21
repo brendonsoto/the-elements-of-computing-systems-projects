@@ -6,15 +6,15 @@ def write_arithmetic(operation, func_end_label):
     elif operation == 'neg':
         return "@SP\nA=M-1\nM=-M\n"
     elif operation == 'eq':
-        return ("@{0}\nD=A\n@R5\nM=D\n"
+        return ("@{0}\nD=A\n@R13\nM=D\n"
                 "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n"
                 "@SET_BOOL_TRUE\nD;JEQ\n@SET_BOOL_FALSE\nD;JMP\n({0})\n").format(func_end_label)
     elif operation == 'gt':
-        return ("@{0}\nD=A\n@R5\nM=D\n"
+        return ("@{0}\nD=A\n@R13\nM=D\n"
                 "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n"
                 "@SET_BOOL_TRUE\nD;JGT\n@SET_BOOL_FALSE\nD;JMP\n({0})\n").format(func_end_label)
     elif operation == 'lt':
-        return ("@{0}\nD=A\n@R5\nM=D\n"
+        return ("@{0}\nD=A\n@R13\nM=D\n"
                 "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n"
                 "@SET_BOOL_TRUE\nD;JLT\n@SET_BOOL_FALSE\nD;JMP\n({0})\n").format(func_end_label)
     elif operation == 'and':
@@ -27,8 +27,8 @@ def write_arithmetic(operation, func_end_label):
 # The helpers are surrounded by END statements/declaration because they will be added at the end and we don't want the helpers to be run at the end of the program
 def write_helpers():
     end_jump = "@END\nD;JMP\n"
-    set_bool_true_routine = "(SET_BOOL_TRUE)\n@SP\nA=M\nM=-1\n@SP\nAM=M+1\n@R5\nA=M\nD;JMP\n"
-    set_bool_false_routine = "(SET_BOOL_FALSE)\n@SP\nA=M\nM=0\n@SP\nAM=M+1\n@R5\nA=M\nD;JMP\n"
+    set_bool_true_routine = "(SET_BOOL_TRUE)\n@SP\nA=M\nM=-1\n@SP\nAM=M+1\n@R13\nA=M\nD;JMP\n"
+    set_bool_false_routine = "(SET_BOOL_FALSE)\n@SP\nA=M\nM=0\n@SP\nAM=M+1\n@R13\nA=M\nD;JMP\n"
     end_declaration = "(END)\n"
     return ''.join([end_jump, set_bool_true_routine, set_bool_false_routine, end_declaration])
 
@@ -38,9 +38,42 @@ def check_if_helpers_are_needed(instructions):
             return True
     return False
 
-def write_push(instructions):
-    value = instructions['value']
+def write_pop(instruction):
+    bases = {
+            'argument': 'ARG',
+            'local': 'LCL',
+            'temp': 'R5',
+            'that': 'THAT',
+            'this': 'THIS',
+            }
+    base_address = bases[instruction['base']]
+    index_from_base = instruction['index']
+    address_register = 'A' if instruction['base'] == 'temp' else 'M'
+
+    if index_from_base == '0':
+        return "@SP\nAM=M-1\nD=M\n@{0}\nA=M\nM=D\n".format(base_address)
+    return "@{0}\nD={1}\n@{2}\nD=D+A\n@R13\nM=D\n@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D\n".format(base_address, address_register, index_from_base)
+
+def write_push_constant(value):
     return "@{0}\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n".format(value)
+
+# FIXME Needs to accomodate variable names too
+def write_push(instruction):
+    bases = {
+            'argument': 'ARG',
+            'local': 'LCL',
+            'temp': 'R5',
+            'that': 'THAT',
+            'this': 'THIS',
+            }
+    if instruction['type'] == 'constant':
+        return write_push_constant(instruction['value'])
+    base = bases[instruction['type']]
+    value = instruction['value']
+
+    if value == '0':
+        return "@{0}\nA=M\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base)
+    return "@{0}\nA=M\nD=A\n@{1}\nA=D+A\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base, value)
 
 def create_code(instructions):
     equality_func_count = 0
@@ -53,6 +86,8 @@ def create_code(instructions):
             equality_func_count += 1
         if instruction['type'] == 'push':
             code.append(write_push(instruction['value']))
+        if instruction['type'] == 'pop':
+            code.append(write_pop(instruction['value']))
 
     are_helpers_needed = check_if_helpers_are_needed(instructions)
     if are_helpers_needed:

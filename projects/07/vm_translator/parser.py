@@ -10,7 +10,7 @@ def read_file(file_path):
     f.close()
     return instructions
 
-def get_instructions(lines_from_file):
+def translate_line(line):
     arithmetic_types = [
             'add',
             'sub',
@@ -22,14 +22,22 @@ def get_instructions(lines_from_file):
             'or',
             'not'
             ]
+
+    if line in arithmetic_types:
+        return { 'type': 'arithmetic', 'value': line }
+
+    words = line.split(' ')
+    if words[0] == 'push':
+        return { 'type': 'push', 'value': { 'type': words[1], 'value': words[2] } }
+    if words[0] == 'pop':
+        return { 'type': 'pop', 'value': { 'base': words[1], 'index': words[2] }}
+    return {}
+
+def get_instructions(lines_from_file):
+
     instructions = []
 
     for line in lines_from_file:
-        if line in arithmetic_types:
-            instructions.append({ 'type': 'arithmetic', 'value': line })
-
-        words = line.split(' ')
-        if words[0] == 'push':
-            instructions.append({ 'type': 'push', 'value': { 'type': words[1], 'value': words[2] } })
+        instructions.append(translate_line(line))
 
     return instructions
