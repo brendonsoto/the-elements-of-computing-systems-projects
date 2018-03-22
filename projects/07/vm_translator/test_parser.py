@@ -3,17 +3,17 @@ import parser
 
 
 class TestParser(unittest.TestCase):
-    def test_read_file(self):
+    def test_get_vm_code_from_file(self):
         expected = [
                 'push constant 7',
                 'push constant 8',
                 'add'
                 ]
-        lines = parser.read_file('../StackArithmetic/SimpleAdd/SimpleAdd.vm')
+        lines = parser.get_vm_code_from_file('../StackArithmetic/SimpleAdd/SimpleAdd.vm')
         self.assertListEqual(lines, expected)
 
     def test_parse_instructions(self):
-        lines = parser.read_file('../StackArithmetic/SimpleAdd/SimpleAdd.vm')
+        lines = parser.get_vm_code_from_file('../StackArithmetic/SimpleAdd/SimpleAdd.vm')
         expected = [
                 { 'type': 'push', 'value': { 'type': 'constant', 'value': 7 } },
                 { 'type': 'push', 'value': { 'type': 'constant', 'value': 8 } },
@@ -24,12 +24,12 @@ class TestParser(unittest.TestCase):
     def test_translate_pop(self):
         line = 'pop argument 1'
         expected = { 'type': 'pop', 'value': { 'base': 'argument', 'index': '1' } }
-        translation = parser.translate_line(line)
+        translation = parser.get_parsed_command(line)
         self.assertDictEqual(translation, expected)
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(TestParser('test_read_file'))
+    suite.addTest(TestParser('test_get_vm_code_from_file'))
     return suite
 
 

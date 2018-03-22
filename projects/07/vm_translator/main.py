@@ -3,7 +3,7 @@ import parser
 
 
 def translate_file(vm_file):
-    input_code = parser.read_file(vm_file)
+    input_code = parser.get_vm_code_from_file(vm_file)
     instructions = parser.get_instructions(input_code)
     assembly_code = code_writer.create_code(instructions)
 

@@ -1,0 +1,22 @@
+// Jump to the end so that the helpers can only be run by reference
+@END
+D;JMP
+(SET_BOOL_TRUE)
+@SP
+A=M
+M=-1
+@SP
+AM=M+1
+@R13
+A=M
+D;JMP
+(SET_BOOL_FALSE)
+@SP
+A=M
+M=0
+@SP
+AM=M+1
+@R13
+A=M
+D;JMP
+(END)
