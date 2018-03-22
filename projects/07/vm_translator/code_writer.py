@@ -84,7 +84,7 @@ def write_push(instruction):
         return "@{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(address)
     if instruction['type'] == 'temp':
         address = "R{0}".format(5+int(value))
-        return "@{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base)
+        return "@{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(address)
     if value == '0':
         return "@{0}\nA=M\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base)
     return "@{0}\nA=M\nD=A\n@{1}\nA=D+A\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base, value)
