@@ -1,3 +1,4 @@
+# NOTE Post-Proj-7: I don't like global variables much. This probably could've been encapsulated inside a function (i.e. `get_base_name`)
 bases = {
         'argument': 'ARG',
         'local': 'LCL',
@@ -48,6 +49,8 @@ def write_arithmetic(operation, func_end_label):
     return code
 
 
+# NOTE Post-Proj-7: This still urks me a bit, but I don't know how to clean it up. It's basically outputting a simple string.
+# Maybe it would've been better to just have a separate text file with the routine and have a function call to grab the file and insert the text?
 # The helpers are surrounded by END statements/declaration because they will be added at the end and we don't want the helpers to be run at the end of the program
 def write_helpers():
     end_jump = "@END\nD;JMP\n"
@@ -72,6 +75,7 @@ def check_if_helpers_are_needed(instructions):
     return False
 
 
+# NOTE Post-Proj-7: For temp and pointer, I probably could've avoided calling format twice by calculating the address as an int and jsut feeding that into the pop_code format func. Same with Static actually.
 def write_pop(instruction):
     index_from_base = instruction['index']
     pop_code = ''
@@ -105,6 +109,7 @@ def write_push_constant(value):
     return "@{0}\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n".format(value)
 
 
+# NOTE Post-Proj-7: Pop comments apply here too.
 def write_push(instruction):
     value = instruction['value']
     push_code = ''
