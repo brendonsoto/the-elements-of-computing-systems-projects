@@ -1,3 +1,12 @@
+bases = {
+        'argument': 'ARG',
+        'local': 'LCL',
+        'pointer': 'R3',
+        'temp': 'R5',
+        'that': 'THAT',
+        'this': 'THIS',
+        }
+
 def write_arithmetic(operation, func_end_label):
     if operation == 'add':
         return "@SP\nAM=M-1\nD=M\nA=A-1\nM=D+M\n"
@@ -39,17 +48,17 @@ def check_if_helpers_are_needed(instructions):
     return False
 
 def write_pop(instruction):
-    bases = {
-            'argument': 'ARG',
-            'local': 'LCL',
-            'temp': 'R5',
-            'that': 'THAT',
-            'this': 'THIS',
-            }
     base_address = bases[instruction['base']]
     index_from_base = instruction['index']
     address_register = 'A' if instruction['base'] == 'temp' else 'M'
 
+
+    if instruction['base'] == 'pointer':
+        address = 'R{0}'.format(3+int(index_from_base))
+        return "@SP\nAM=M-1\nD=M\n@{0}\nM=D\n".format(address)
+    if instruction['base'] == 'temp':
+        address = 'R{0}'.format(5+int(index_from_base))
+        return "@SP\nAM=M-1\nD=M\n@{0}\nM=D\n".format(address)
     if index_from_base == '0':
         return "@SP\nAM=M-1\nD=M\n@{0}\nA=M\nM=D\n".format(base_address)
     return "@{0}\nD={1}\n@{2}\nD=D+A\n@R13\nM=D\n@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D\n".format(base_address, address_register, index_from_base)
@@ -57,20 +66,18 @@ def write_pop(instruction):
 def write_push_constant(value):
     return "@{0}\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n".format(value)
 
-# FIXME Needs to accomodate variable names too
 def write_push(instruction):
-    bases = {
-            'argument': 'ARG',
-            'local': 'LCL',
-            'temp': 'R5',
-            'that': 'THAT',
-            'this': 'THIS',
-            }
     if instruction['type'] == 'constant':
         return write_push_constant(instruction['value'])
     base = bases[instruction['type']]
     value = instruction['value']
 
+    if instruction['type'] == 'pointer':
+        address = "R{0}".format(3+int(value))
+        return "@{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(address)
+    if instruction['type'] == 'temp':
+        address = "R{0}".format(5+int(value))
+        return "@{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base)
     if value == '0':
         return "@{0}\nA=M\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base)
     return "@{0}\nA=M\nD=A\n@{1}\nA=D+A\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base, value)
