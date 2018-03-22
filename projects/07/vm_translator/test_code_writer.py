@@ -22,7 +22,7 @@ class TestCodeWriter(unittest.TestCase):
 
     def test_push_vm_symbol_temp_2(self):
         instruction = { 'type': 'temp', 'value': '2' }
-        expected = "@R5\nA=M\nD=A\n@2\nA=D+A\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n"
+        expected = "@R7\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n"
         assembly_code = code_writer.write_push(instruction)
         self.assertEqual(assembly_code, expected)
 

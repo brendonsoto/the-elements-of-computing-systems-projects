@@ -27,11 +27,14 @@ def translate_line(line):
         return { 'type': 'arithmetic', 'value': line }
 
     words = line.split(' ')
+    instruction = {}
+
     if words[0] == 'push':
-        return { 'type': 'push', 'value': { 'type': words[1], 'value': words[2] } }
+        instruction = { 'type': 'push', 'value': { 'type': words[1], 'value': words[2] } }
     if words[0] == 'pop':
-        return { 'type': 'pop', 'value': { 'base': words[1], 'index': words[2] }}
-    return {}
+        instruction = { 'type': 'pop', 'value': { 'base': words[1], 'index': words[2] }}
+
+    return instruction
 
 def get_instructions(lines_from_file):
 
