@@ -2,6 +2,7 @@ bases = {
         'argument': 'ARG',
         'local': 'LCL',
         'pointer': 'R3',
+        'static': 'static',
         'temp': 'R5',
         'that': 'THAT',
         'this': 'THIS',
@@ -56,6 +57,9 @@ def write_pop(instruction):
     if instruction['base'] == 'pointer':
         address = 'R{0}'.format(3+int(index_from_base))
         return "@SP\nAM=M-1\nD=M\n@{0}\nM=D\n".format(address)
+    if instruction['base'] == 'static':
+        address = 'static.{0}'.format(index_from_base)
+        return "@SP\nAM=M-1\nD=M\n@{0}\nM=D\n".format(address)
     if instruction['base'] == 'temp':
         address = 'R{0}'.format(5+int(index_from_base))
         return "@SP\nAM=M-1\nD=M\n@{0}\nM=D\n".format(address)
@@ -74,6 +78,9 @@ def write_push(instruction):
 
     if instruction['type'] == 'pointer':
         address = "R{0}".format(3+int(value))
+        return "@{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(address)
+    if instruction['type'] == 'static':
+        address = "static.{0}".format(value)
         return "@{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(address)
     if instruction['type'] == 'temp':
         address = "R{0}".format(5+int(value))
