@@ -54,6 +54,15 @@ def write_arithmetic(operation, func_end_label):
     return code
 
 
+def write_comment(instruction):
+    if not instruction['value']:
+        return "// {0}\n".format(instruction['type'])
+    if type(instruction['value']) is dict:
+        dict_values = ' '.join(instruction['value'].values())
+        return "// {0} {1}\n".format(instruction['type'], dict_values)
+    return "// {0} {1}\n".format(instruction['type'], instruction['value'])
+
+
 def write_if(vm_file, label):
     import os
     file_base = os.path.basename(vm_file)
@@ -72,15 +81,6 @@ def write_label(vm_file, label):
 def write_helpers():
     with open('./HELPERS', 'r') as f:
         return f.read()
-
-
-def check_if_helpers_are_needed(instructions):
-    for instruction in instructions:
-        if (instruction['value'] == 'eq' or
-            instruction['value'] == 'gt' or
-            instruction['value'] == 'lt'):
-            return True
-    return False
 
 
 def write_pop(instruction):
@@ -109,16 +109,12 @@ def write_pop(instruction):
     return pop_code
 
 
-def write_push_constant(value):
-    return "@{0}\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n".format(value)
-
-
 def write_push(instruction):
     value = instruction['value']
     push_code = ''
 
     if instruction['type'] == 'constant':
-        push_code = write_push_constant(instruction['value'])
+        push_code = "@{0}\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n".format((instruction['value']))
 
     elif instruction['type'] == 'pointer':
         push_code = "@R{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(pointer_address_start + int(value))
@@ -140,13 +136,13 @@ def write_push(instruction):
     return push_code
 
 
-def write_comment(instruction):
-    if not instruction['value']:
-        return "// {0}\n".format(instruction['type'])
-    if type(instruction['value']) is dict:
-        dict_values = ' '.join(instruction['value'].values())
-        return "// {0} {1}\n".format(instruction['type'], dict_values)
-    return "// {0} {1}\n".format(instruction['type'], instruction['value'])
+def check_if_helpers_are_needed(instructions):
+    for instruction in instructions:
+        if (instruction['value'] == 'eq' or
+            instruction['value'] == 'gt' or
+            instruction['value'] == 'lt'):
+            return True
+    return False
 
 
 def create_code(vm_file, instructions):
