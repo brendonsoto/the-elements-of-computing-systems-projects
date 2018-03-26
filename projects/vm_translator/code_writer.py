@@ -1,7 +1,6 @@
 pointer_address_start = 3
 temp_address_start = 5
 
-# NOTE Post-Proj-7: I don't like global variables much. This probably could've been encapsulated inside a function (i.e. `get_base_name`)
 def get_base_name(vm_memory_keyword):
     bases = {
             'argument': 'ARG',
@@ -53,6 +52,20 @@ def write_arithmetic(operation, func_end_label):
         code = "@SP\nA=M-1\nM=!M\nA=A+1\n"
 
     return code
+
+
+def write_if(vm_file, label):
+    import os
+    file_base = os.path.basename(vm_file)
+    file_name = os.path.splitext(file_base)[0]
+    return "@SP\nAM=M-1\nD=M\n@{0}.{1}\nD;JGT\n".format(file_name, label)
+
+
+def write_label(vm_file, label):
+    import os
+    file_base = os.path.basename(vm_file)
+    file_name = os.path.splitext(file_base)[0]
+    return "({0}.{1})\n".format(file_name, label)
 
 
 # The helpers are surrounded by END statements/declaration because they will be added at the end and we don't want the helpers to be run at the end of the program
@@ -127,14 +140,29 @@ def write_push(instruction):
     return push_code
 
 
-def create_code(instructions):
+def write_comment(instruction):
+    if not instruction['value']:
+        return "// {0}\n".format(instruction['type'])
+    if type(instruction['value']) is dict:
+        dict_values = ' '.join(instruction['value'].values())
+        return "// {0} {1}\n".format(instruction['type'], dict_values)
+    return "// {0} {1}\n".format(instruction['type'], instruction['value'])
+
+
+def create_code(vm_file, instructions):
     equality_func_count = 0
 
     code = []
     for instruction in instructions:
 
+        # Add comments dynamically
+        code.append(write_comment(instruction))
+
         if instruction['type'] == 'arithmetic':
-            func_end_label = "arith_func_{0}".format(equality_func_count)
+            import os
+            file_base = os.path.basename(vm_file)
+            file_name = os.path.splitext(file_base)[0]
+            func_end_label = "{0}.arith_func_{1}".format(file_name, equality_func_count)
             code.append(write_arithmetic(instruction['value'], func_end_label))
             equality_func_count += 1
 
@@ -143,6 +171,12 @@ def create_code(instructions):
 
         if instruction['type'] == 'pop':
             code.append(write_pop(instruction['value']))
+
+        if instruction['type'] == 'if-goto':
+            code.append(write_if(vm_file, instruction['value']))
+
+        if instruction['type'] == 'label':
+            code.append(write_label(vm_file, instruction['value']))
 
     are_helpers_needed = check_if_helpers_are_needed(instructions)
 

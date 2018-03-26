@@ -9,11 +9,11 @@ class TestParser(unittest.TestCase):
                 'push constant 8',
                 'add'
                 ]
-        lines = parser.get_vm_code_from_file('../StackArithmetic/SimpleAdd/SimpleAdd.vm')
+        lines = parser.get_vm_code_from_file('../../completed-projects/07/StackArithmetic/SimpleAdd/SimpleAdd.vm')
         self.assertListEqual(lines, expected)
 
     def test_parse_instructions(self):
-        lines = parser.get_vm_code_from_file('../StackArithmetic/SimpleAdd/SimpleAdd.vm')
+        lines = parser.get_vm_code_from_file('../../completed-projects/07/StackArithmetic/SimpleAdd/SimpleAdd.vm')
         expected = [
                 { 'type': 'push', 'value': { 'type': 'constant', 'value': 7 } },
                 { 'type': 'push', 'value': { 'type': 'constant', 'value': 8 } },
