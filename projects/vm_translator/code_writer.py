@@ -20,34 +20,26 @@ def write_arithmetic(operation, func_end_label):
 
     if operation == 'add':
         code = "@SP\nAM=M-1\nD=M\nA=A-1\nM=D+M\n"
-
     elif operation == 'sub':
         code = "@SP\nAM=M-1\nD=M\nA=A-1\nM=M-D\n"
-
     elif operation == 'neg':
         code = "@SP\nA=M-1\nM=-M\n"
-
     elif operation == 'eq':
         code = ("@{0}\nD=A\n@R13\nM=D\n"
                 "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n"
                 "@SET_BOOL_TRUE\nD;JEQ\n@SET_BOOL_FALSE\nD;JMP\n({0})\n").format(func_end_label)
-
     elif operation == 'gt':
         code = ("@{0}\nD=A\n@R13\nM=D\n"
                 "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n"
                 "@SET_BOOL_TRUE\nD;JGT\n@SET_BOOL_FALSE\nD;JMP\n({0})\n").format(func_end_label)
-
     elif operation == 'lt':
         code = ("@{0}\nD=A\n@R13\nM=D\n"
                 "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n"
                 "@SET_BOOL_TRUE\nD;JLT\n@SET_BOOL_FALSE\nD;JMP\n({0})\n").format(func_end_label)
-
     elif operation == 'and':
         code = "@SP\nAM=M-1\nD=M\nA=A-1\nM=D&M\nA=A+1\n"
-
     elif operation == 'or':
         code = "@SP\nAM=M-1\nD=M\nA=A-1\nM=D|M\nA=A+1\n"
-
     elif operation =='not':
         code = "@SP\nA=M-1\nM=!M\nA=A+1\n"
 
@@ -61,6 +53,13 @@ def write_comment(instruction):
         dict_values = ' '.join(instruction['value'].values())
         return "// {0} {1}\n".format(instruction['type'], dict_values)
     return "// {0} {1}\n".format(instruction['type'], instruction['value'])
+
+
+def write_goto(vm_file, label):
+    import os
+    file_base = os.path.basename(vm_file)
+    file_name = os.path.splitext(file_base)[0]
+    return "@{0}.{1}\nD;JMP\n".format(file_name, label)
 
 
 def write_if(vm_file, label):
@@ -89,17 +88,13 @@ def write_pop(instruction):
 
     if instruction['base'] == 'pointer':
         pop_code = "@SP\nAM=M-1\nD=M\n@R{0}\nM=D\n".format(pointer_address_start + int(index_from_base))
-
     elif instruction['base'] == 'static':
         pop_code = "@SP\nAM=M-1\nD=M\n@static.{0}\nM=D\n".format(index_from_base)
-
     elif instruction['base'] == 'temp':
         pop_code = "@SP\nAM=M-1\nD=M\n@R{0}\nM=D\n".format(temp_address_start + int(index_from_base))
-
     elif index_from_base == '0':
         base_address = get_base_name(instruction['base'])
         pop_code = "@SP\nAM=M-1\nD=M\n@{0}\nA=M\nM=D\n".format(base_address)
-
     else:
         base_address = get_base_name(instruction['base'])
         address_register = 'A' if instruction['base'] == 'temp' else 'M'
@@ -115,20 +110,15 @@ def write_push(instruction):
 
     if instruction['type'] == 'constant':
         push_code = "@{0}\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n".format((instruction['value']))
-
     elif instruction['type'] == 'pointer':
         push_code = "@R{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(pointer_address_start + int(value))
-
     elif instruction['type'] == 'static':
         push_code = "@static.{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(value)
-
     elif instruction['type'] == 'temp':
         push_code = "@R{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(temp_address_start + int(value))
-
     elif value == '0':
         base = get_base_name(instruction['type'])
         push_code = "@{0}\nA=M\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base)
-
     else:
         base = get_base_name(instruction['type'])
         push_code = "@{0}\nA=M\nD=A\n@{1}\nA=D+A\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base, value)
@@ -164,14 +154,13 @@ def create_code(vm_file, instructions):
 
         if instruction['type'] == 'push':
             code.append(write_push(instruction['value']))
-
-        if instruction['type'] == 'pop':
+        elif instruction['type'] == 'pop':
             code.append(write_pop(instruction['value']))
-
-        if instruction['type'] == 'if-goto':
+        elif instruction['type'] == 'goto':
+            code.append(write_goto(vm_file, instruction['value']))
+        elif instruction['type'] == 'if-goto':
             code.append(write_if(vm_file, instruction['value']))
-
-        if instruction['type'] == 'label':
+        elif instruction['type'] == 'label':
             code.append(write_label(vm_file, instruction['value']))
 
     are_helpers_needed = check_if_helpers_are_needed(instructions)

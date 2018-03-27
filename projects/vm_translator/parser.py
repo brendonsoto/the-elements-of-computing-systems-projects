@@ -35,6 +35,8 @@ def get_parsed_command(vm_command):
         instruction = { 'type': 'pop', 'value': { 'base': parts[1], 'index': parts[2] }}
     if parts[0] == 'label':
         instruction = { 'type': 'label', 'value': parts[1] }
+    if parts[0] == 'goto':
+        instruction = { 'type': 'goto', 'value': parts[1] }
     if parts[0] == 'if-goto':
         instruction = { 'type': 'if-goto', 'value': parts[1] }
 
