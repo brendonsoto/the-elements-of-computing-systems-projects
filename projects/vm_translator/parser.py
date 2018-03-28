@@ -30,15 +30,20 @@ def get_parsed_command(vm_command):
     instruction = {}
 
     if parts[0] == 'push':
+        # Everything is a dict with { type & value } for comment printing
         instruction = { 'type': 'push', 'value': { 'type': parts[1], 'value': parts[2] } }
-    if parts[0] == 'pop':
+    elif parts[0] == 'pop':
         instruction = { 'type': 'pop', 'value': { 'base': parts[1], 'index': parts[2] }}
-    if parts[0] == 'label':
+    elif parts[0] == 'label':
         instruction = { 'type': 'label', 'value': parts[1] }
-    if parts[0] == 'goto':
+    elif parts[0] == 'function':
+        instruction = { 'type': 'function', 'value': { 'label': parts[1], 'num_args': parts[2] } }
+    elif parts[0] == 'goto':
         instruction = { 'type': 'goto', 'value': parts[1] }
-    if parts[0] == 'if-goto':
+    elif parts[0] == 'if-goto':
         instruction = { 'type': 'if-goto', 'value': parts[1] }
+    elif parts[0] == 'return':
+        instruction = { 'type': 'return' }
 
     return instruction
 

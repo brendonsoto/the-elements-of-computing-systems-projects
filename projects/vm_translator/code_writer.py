@@ -47,7 +47,7 @@ def write_arithmetic(operation, func_end_label):
 
 
 def write_comment(instruction):
-    if not instruction['value']:
+    if 'value' not in instruction:
         return "// {0}\n".format(instruction['type'])
     if type(instruction['value']) is dict:
         dict_values = ' '.join(instruction['value'].values())
@@ -55,13 +55,33 @@ def write_comment(instruction):
     return "// {0} {1}\n".format(instruction['type'], instruction['value'])
 
 
-def write_goto(vm_file, label):
-    import os
-    file_base = os.path.basename(vm_file)
-    file_name = os.path.splitext(file_base)[0]
-    return "@{0}.{1}\nD;JMP\n".format(file_name, label)
+def write_function_declaration(label, num_args):
+    code = []
+    code.append("({0})\n".format(label))
+
+    for i in range(num_args):
+        code.append(write_push({ 'type': 'constant', 'value': '0' }))
+
+    return "".join(code)
+
+def write_function_return():
+    return ''.join([
+        "@LCL\nD=M\n@R5\nM=D\n", # FRAME = LCL
+        "@5\nD=A\n@LCL\nD=M-D\n@R6\nM=D\n", # Return address = FRAME - 5
+        write_pop({ 'base': 'argument', 'index': 0 }), # Pop into ARG
+        "@ARG\nD=M+1\n@SP\nM=D\n", # SP = ARG + 1
+        "@R5\nA=M-1\nD=M\n@THAT\nM=D\n", # THAT = FRAME - 1
+        "@2\nD=A\n@R5\nA=M-D\nD=M\n@THIS\nM=D\n", # THIS = FRAME - 2
+        "@3\nD=A\n@R5\nA=M-D\nD=M\n@ARG\nM=D\n", # ARG = FRAME - 3
+        "@4\nD=A\n@R5\nA=M-D\nD=M\n@LCL\nM=D\n", # LCL = FRAME - 4
+        write_goto("@R6\nA=M")
+    ])
+
+def write_goto(label):
+    return "{0}\nD;JMP\n".format(label)
 
 
+# FIXME Duplication of file_name
 def write_if(vm_file, label):
     import os
     file_base = os.path.basename(vm_file)
@@ -156,12 +176,26 @@ def create_code(vm_file, instructions):
             code.append(write_push(instruction['value']))
         elif instruction['type'] == 'pop':
             code.append(write_pop(instruction['value']))
+        elif instruction['type'] == 'function':
+            code.append(
+                    write_function_declaration(
+                        instruction['value']['label'],
+                        int(instruction['value']['num_args']
+                    )
+                )
+            )
         elif instruction['type'] == 'goto':
-            code.append(write_goto(vm_file, instruction['value']))
+            import os
+            file_base = os.path.basename(vm_file)
+            file_name = os.path.splitext(file_base)[0]
+            label = "@{0}.{1}".format(file_name, instruction['value'])
+            code.append(write_goto(label))
         elif instruction['type'] == 'if-goto':
             code.append(write_if(vm_file, instruction['value']))
         elif instruction['type'] == 'label':
             code.append(write_label(vm_file, instruction['value']))
+        elif instruction['type'] == 'return':
+            code.append(write_function_return())
 
     are_helpers_needed = check_if_helpers_are_needed(instructions)
 
