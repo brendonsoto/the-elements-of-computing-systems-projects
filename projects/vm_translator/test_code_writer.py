@@ -4,11 +4,10 @@ import code_writer
 
 class TestCodeWriter(unittest.TestCase):
     def test_write_function_declaration(self):
-        instruction = { 'type': 'function', 'label': 'test', 'num_args': 2 }
         vm_file = "test.vm"
 
         expected = "(test)\n@0\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n@0\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n"
-        assembly_code = code_writer.write_function_declaration(vm_file, instruction)
+        assembly_code = code_writer.write_function_declaration('test', 2)
 
     def test_pop(self):
         expected = "@LCL\nD=M\n@2\nD=D+A\n@R13\nM=D\n@SP\nAM=M-1\nD=M\n@R13\nA=M\nM=D\n"

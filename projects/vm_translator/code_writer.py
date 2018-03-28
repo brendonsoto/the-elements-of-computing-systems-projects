@@ -1,6 +1,7 @@
 pointer_address_start = 3
 temp_address_start = 5
 
+
 def get_base_name(vm_memory_keyword):
     bases = {
             'argument': 'ARG',
@@ -46,6 +47,13 @@ def write_arithmetic(operation, func_end_label):
     return code
 
 
+def write_bootstrap():
+    return (
+            "@256\nD=A\n@SP\nM=D\n" # Init SP to RAM[256]
+            "call Sys.init 0\n" # Call Sys.init
+            )
+
+
 def write_comment(instruction):
     if 'value' not in instruction:
         return "// {0}\n".format(instruction['type'])
@@ -64,6 +72,7 @@ def write_function_declaration(label, num_args):
 
     return "".join(code)
 
+
 def write_function_return():
     return ''.join([
         "@LCL\nD=M\n@R5\nM=D\n", # FRAME = LCL
@@ -77,22 +86,16 @@ def write_function_return():
         write_goto("@R6\nA=M")
     ])
 
+
 def write_goto(label):
     return "{0}\nD;JMP\n".format(label)
 
 
-# FIXME Duplication of file_name
-def write_if(vm_file, label):
-    import os
-    file_base = os.path.basename(vm_file)
-    file_name = os.path.splitext(file_base)[0]
+def write_if(file_name, label):
     return "@SP\nAM=M-1\nD=M\n@{0}.{1}\nD;JGT\n".format(file_name, label)
 
 
-def write_label(vm_file, label):
-    import os
-    file_base = os.path.basename(vm_file)
-    file_name = os.path.splitext(file_base)[0]
+def write_label(file_name, label):
     return "({0}.{1})\n".format(file_name, label)
 
 
@@ -161,16 +164,10 @@ def create_code(vm_file, instructions):
     code = []
     for instruction in instructions:
 
+        if 'type' not in instruction:
+            continue
         # Add comments dynamically
         code.append(write_comment(instruction))
-
-        if instruction['type'] == 'arithmetic':
-            import os
-            file_base = os.path.basename(vm_file)
-            file_name = os.path.splitext(file_base)[0]
-            func_end_label = "{0}.arith_func_{1}".format(file_name, equality_func_count)
-            code.append(write_arithmetic(instruction['value'], func_end_label))
-            equality_func_count += 1
 
         if instruction['type'] == 'push':
             code.append(write_push(instruction['value']))
@@ -184,18 +181,26 @@ def create_code(vm_file, instructions):
                     )
                 )
             )
-        elif instruction['type'] == 'goto':
+        elif instruction['type'] == 'return':
+            code.append(write_function_return())
+        else:
+
+            # These are all instruction types that need the file name since they all involve labels
             import os
             file_base = os.path.basename(vm_file)
             file_name = os.path.splitext(file_base)[0]
-            label = "@{0}.{1}".format(file_name, instruction['value'])
-            code.append(write_goto(label))
-        elif instruction['type'] == 'if-goto':
-            code.append(write_if(vm_file, instruction['value']))
-        elif instruction['type'] == 'label':
-            code.append(write_label(vm_file, instruction['value']))
-        elif instruction['type'] == 'return':
-            code.append(write_function_return())
+
+            if instruction['type'] == 'arithmetic':
+                func_end_label = "{0}.arith_func_{1}".format(file_name, equality_func_count)
+                code.append(write_arithmetic(instruction['value'], func_end_label))
+            elif instruction['type'] == 'goto':
+                label = "@{0}.{1}".format(file_name, instruction['value'])
+                code.append(write_goto(label))
+            elif instruction['type'] == 'if-goto':
+                code.append(write_if(file_name, instruction['value']))
+            elif instruction['type'] == 'label':
+                code.append(write_label(file_name, instruction['value']))
+
 
     are_helpers_needed = check_if_helpers_are_needed(instructions)
 
