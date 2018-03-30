@@ -26,16 +26,16 @@ def write_arithmetic(operation, func_end_label):
     elif operation == 'neg':
         code = "@SP\nA=M-1\nM=-M\n"
     elif operation == 'eq':
-        code = ("@{0}\nD=A\n@R13\nM=D\n"
-                "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n"
+        code = ("@{0}\nD=A\n@R13\nM=D\n" # Save return address
+                "@SP\nAM=M-1\nD=M\nA=A-1\nMD=M-D\n" # Get bool val
                 "@SET_BOOL_TRUE\nD;JEQ\n@SET_BOOL_FALSE\nD;JMP\n({0})\n").format(func_end_label)
     elif operation == 'gt':
-        code = ("@{0}\nD=A\n@R13\nM=D\n"
-                "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n"
+        code = ("@{0}\nD=A\n@R13\nM=D\n" # Save return address
+                "@SP\nAM=M-1\nD=M\nA=A-1\nMD=M-D\n" # Get bool val
                 "@SET_BOOL_TRUE\nD;JGT\n@SET_BOOL_FALSE\nD;JMP\n({0})\n").format(func_end_label)
     elif operation == 'lt':
-        code = ("@{0}\nD=A\n@R13\nM=D\n"
-                "@SP\nAM=M-1\nD=M\n@SP\nAM=M-1\nD=M-D\n"
+        code = ("@{0}\nD=A\n@R13\nM=D\n" # Save return address
+                "@SP\nAM=M-1\nD=M\nA=A-1\nMD=M-D\n" # Get bool val
                 "@SET_BOOL_TRUE\nD;JLT\n@SET_BOOL_FALSE\nD;JMP\n({0})\n").format(func_end_label)
     elif operation == 'and':
         code = "@SP\nAM=M-1\nD=M\nA=A-1\nM=D&M\nA=A+1\n"
@@ -48,19 +48,35 @@ def write_arithmetic(operation, func_end_label):
 
 
 def write_bootstrap():
-    return (
-            "@256\nD=A\n@SP\nM=D\n" # Init SP to RAM[256]
-            "call Sys.init 0\n" # Call Sys.init
-            )
+    return ''.join([
+            "@256\nD=A\n@SP\nM=D\n", # Init SP to RAM[256]
+            write_function_call("Sys.init", 0, "Sys.init_return")
+            ])
 
 
 def write_comment(instruction):
     if 'value' not in instruction:
         return "// {0}\n".format(instruction['type'])
     if type(instruction['value']) is dict:
-        dict_values = ' '.join(instruction['value'].values())
+        dict_values = ' '.join(str(val) for val in instruction['value'].values())
         return "// {0} {1}\n".format(instruction['type'], dict_values)
     return "// {0} {1}\n".format(instruction['type'], instruction['value'])
+
+
+# function_label = (for example) Sys.init
+def write_function_call(function_label, num_args, return_address):
+    arg_pointer_offset = num_args + 5
+    return ''.join([
+        write_push({ 'type': 'address', 'value': return_address }), # Push return address
+        write_push({ 'type': 'memory', 'value': 'local' }), # Push LCL 
+        write_push({ 'type': 'memory', 'value': 'argument' }), # Push ARG
+        write_push({ 'type': 'memory', 'value': 'this' }), # Push THIS
+        write_push({ 'type': 'memory', 'value': 'that' }), # push THAT
+        "@SP\nD=M\n@{0}\nD=D-A\n@ARG\nM=D\n".format(arg_pointer_offset), # ARG = SP - n - 5
+        "@SP\nD=M\n@LCL\nM=D\n", # LCL = SP
+        write_goto("@{0}".format(function_label)), # Goto function
+        "({0})\n".format(return_address) # Write Return Label -- Not using func since label includes file
+        ])
 
 
 def write_function_declaration(label, num_args):
@@ -76,7 +92,7 @@ def write_function_declaration(label, num_args):
 def write_function_return():
     return ''.join([
         "@LCL\nD=M\n@R5\nM=D\n", # FRAME = LCL
-        "@5\nD=A\n@LCL\nD=M-D\n@R6\nM=D\n", # Return address = FRAME - 5
+        "@5\nD=A\n@LCL\nA=M-D\nD=M\n@R6\nM=D\n", # Return address = FRAME - 5
         write_pop({ 'base': 'argument', 'index': 0 }), # Pop into ARG
         "@ARG\nD=M+1\n@SP\nM=D\n", # SP = ARG + 1
         "@R5\nA=M-1\nD=M\n@THAT\nM=D\n", # THAT = FRAME - 1
@@ -92,7 +108,7 @@ def write_goto(label):
 
 
 def write_if(file_name, label):
-    return "@SP\nAM=M-1\nD=M\n@{0}.{1}\nD;JGT\n".format(file_name, label)
+    return "@SP\nAM=M-1\nD=M\n@{0}.{1}\nD;JLT\n".format(file_name, label)
 
 
 def write_label(file_name, label):
@@ -101,8 +117,19 @@ def write_label(file_name, label):
 
 # The helpers are surrounded by END statements/declaration because they will be added at the end and we don't want the helpers to be run at the end of the program
 def write_helpers():
+    import os
+
+    code = ''
+
+    # Switch temporarily to the VM Translator dir to get the Helpers
+    orig_dir = os.getcwd()
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
     with open('./HELPERS', 'r') as f:
-        return f.read()
+        code = f.read()
+
+    os.chdir(orig_dir)
+    return code
 
 
 def write_pop(instruction):
@@ -127,45 +154,43 @@ def write_pop(instruction):
     return pop_code
 
 
+# TODO Abstract out common strings (i.e. incrementing SP)
 def write_push(instruction):
-    value = instruction['value']
     push_code = ''
 
-    if instruction['type'] == 'constant':
-        push_code = "@{0}\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n".format((instruction['value']))
+    if instruction['type'] == 'address':
+        push_code = "@{0}\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(instruction['value'])
+    elif instruction['type'] == 'constant':
+        push_code = "@{0}\nD=A\n@SP\nA=M\nM=D\n@SP\nAM=M+1\n".format(instruction['value'])
+    elif instruction['type'] == 'memory':
+        memory_keyword = get_base_name(instruction['value'])
+        push_code = "@{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(memory_keyword)
     elif instruction['type'] == 'pointer':
-        push_code = "@R{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(pointer_address_start + int(value))
+        push_code = "@R{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(pointer_address_start + int(instruction['value']))
     elif instruction['type'] == 'static':
-        push_code = "@static.{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(value)
+        push_code = "@static.{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(instruction['value'])
     elif instruction['type'] == 'temp':
-        push_code = "@R{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(temp_address_start + int(value))
-    elif value == '0':
+        push_code = "@R{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(temp_address_start + int(instruction['value']))
+    elif instruction['value'] == '0':
         base = get_base_name(instruction['type'])
         push_code = "@{0}\nA=M\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base)
     else:
         base = get_base_name(instruction['type'])
-        push_code = "@{0}\nA=M\nD=A\n@{1}\nA=D+A\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base, value)
+        push_code = "@{0}\nA=M\nD=A\n@{1}\nA=D+A\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(base, instruction['value'])
 
     return push_code
 
 
-def check_if_helpers_are_needed(instructions):
-    for instruction in instructions:
-        if (instruction['value'] == 'eq' or
-            instruction['value'] == 'gt' or
-            instruction['value'] == 'lt'):
-            return True
-    return False
-
-
 def create_code(vm_file, instructions):
     equality_func_count = 0
+    func_call_count = 0
 
     code = []
     for instruction in instructions:
 
         if 'type' not in instruction:
             continue
+
         # Add comments dynamically
         code.append(write_comment(instruction))
 
@@ -173,14 +198,21 @@ def create_code(vm_file, instructions):
             code.append(write_push(instruction['value']))
         elif instruction['type'] == 'pop':
             code.append(write_pop(instruction['value']))
+        elif instruction['type'] == 'call':
+            return_address = "{0}.{1}_return_{2}".format(vm_file, instruction['value']['label'], func_call_count)
+            code.append(write_function_call(
+                instruction['value']['label'],
+                instruction['value']['num_args'],
+                return_address
+                ))
+            func_call_count += 1
         elif instruction['type'] == 'function':
             code.append(
                     write_function_declaration(
                         instruction['value']['label'],
-                        int(instruction['value']['num_args']
+                        instruction['value']['num_args']
+                        )
                     )
-                )
-            )
         elif instruction['type'] == 'return':
             code.append(write_function_return())
         else:
@@ -200,11 +232,5 @@ def create_code(vm_file, instructions):
                 code.append(write_if(file_name, instruction['value']))
             elif instruction['type'] == 'label':
                 code.append(write_label(file_name, instruction['value']))
-
-
-    are_helpers_needed = check_if_helpers_are_needed(instructions)
-
-    if are_helpers_needed:
-        code.append(write_helpers())
 
     return ''.join(code)

@@ -27,9 +27,16 @@ class TestParser(unittest.TestCase):
         translation = parser.get_parsed_command(line)
         self.assertDictEqual(translation, expected)
 
+    def test_remove_inline_comments(self):
+        line = 'lt      // This is a test comment'
+        expected = 'lt'
+        line_without_comments = parser.remove_inline_comments(line)
+        self.assertEqual(line_without_comments, expected)
+
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestParser('test_get_vm_code_from_file'))
+    suite.addTest(TestParser('test_remove_inline_comments'))
     return suite
 
 
