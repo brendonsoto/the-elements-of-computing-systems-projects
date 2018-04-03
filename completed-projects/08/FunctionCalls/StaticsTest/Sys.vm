@@ -8,13 +8,13 @@
 function Sys.init 0
 push constant 6
 push constant 8
-call Class1.set 2
-pop temp 0 // Dumps the return value
+call Class1.set 2 // Sets Static 0 & 1 to 6 & 8, then pushes 0 to SP
+pop temp 0 // Dumps the return value // temp = 6
 push constant 23
 push constant 15
-call Class2.set 2
-pop temp 0 // Dumps the return value
-call Class1.get 0
-call Class2.get 0
+call Class2.set 2 // Same as above S0:1 = 23&15
+pop temp 0 // Dumps the return value // SP = 23
+call Class1.get 0 // Should return -2
+call Class2.get 0 // should return 8
 label WHILE
 goto WHILE

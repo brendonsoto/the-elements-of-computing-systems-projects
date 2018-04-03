@@ -132,6 +132,7 @@ def write_helpers():
     return code
 
 
+# TODO Include vm file somehow
 def write_pop(instruction):
     index_from_base = instruction['index']
     pop_code = ''
@@ -139,7 +140,7 @@ def write_pop(instruction):
     if instruction['base'] == 'pointer':
         pop_code = "@SP\nAM=M-1\nD=M\n@R{0}\nM=D\n".format(pointer_address_start + int(index_from_base))
     elif instruction['base'] == 'static':
-        pop_code = "@SP\nAM=M-1\nD=M\n@static.{0}\nM=D\n".format(index_from_base)
+        pop_code = "@SP\nAM=M-1\nD=M\n@{0}.static.{1}\nM=D\n".format(instruction['file'], index_from_base)
     elif instruction['base'] == 'temp':
         pop_code = "@SP\nAM=M-1\nD=M\n@R{0}\nM=D\n".format(temp_address_start + int(index_from_base))
     elif index_from_base == '0':
@@ -154,6 +155,7 @@ def write_pop(instruction):
     return pop_code
 
 
+# TODO Include vm file somehow
 # TODO Abstract out common strings (i.e. incrementing SP)
 def write_push(instruction):
     push_code = ''
@@ -168,7 +170,7 @@ def write_push(instruction):
     elif instruction['type'] == 'pointer':
         push_code = "@R{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(pointer_address_start + int(instruction['value']))
     elif instruction['type'] == 'static':
-        push_code = "@static.{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(instruction['value'])
+        push_code = "@{0}.static.{1}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(instruction['file'], instruction['value'])
     elif instruction['type'] == 'temp':
         push_code = "@R{0}\nD=M\n@SP\nA=M\nM=D\n@SP\nM=M+1\n".format(temp_address_start + int(instruction['value']))
     elif instruction['value'] == '0':
