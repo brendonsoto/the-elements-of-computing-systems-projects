@@ -1,0 +1,79 @@
+class Game {
+  field Ball ball;
+  field Paddle paddle;
+  field int score;
+  field boolean isGameOver;
+
+  constructor Game new() {
+    let ball = Ball.new(100, 100, 20);
+    let paddle = Paddle.new();
+    let score = 0;
+    let isGameOver = false;
+    return this;
+  }
+
+  method void dispose() {
+     do Memory.deAlloc(this);
+     return;
+  }
+
+  // This method is a little ugly, but that's okay 'cause this is a temp thing
+  method void run() {
+    var char key;
+    /* var int lastYSpeed; */
+    var boolean didScoreJustUpdate;
+    let didScoreJustUpdate = false;
+
+    // Game loop
+    while (~(isGameOver)) {
+      do Sys.wait(10); // A small throttle
+
+      // Check if score is to be updated
+      if (
+        (~(didScoreJustUpdate)) &
+        (ball.getY() > (paddle.getY() - ball.getSize())) &
+        ((ball.getX() + ball.getSize()) > paddle.getX()) &
+        (ball.getX() < (paddle.getX() + paddle.getWidth()))
+      ) {
+        let score = score + 1;
+        let didScoreJustUpdate = true;
+      }
+
+      if (didScoreJustUpdate & ((ball.getY() + ball.getSize()) < paddle.getY())) {
+        let didScoreJustUpdate = false;
+      }
+
+      // Check if game is over
+      if (((ball.getY() + ball.getSize()) = 255) & (((ball.getX() + ball.getSize()) < paddle.getX()) | (ball.getX() > (paddle.getX() + paddle.getWidth())))) {
+        let isGameOver = true;
+      }
+
+      // Read any input
+      let key = Keyboard.keyPressed(); // Get key
+      if (key = 130) { do paddle.moveLeft(); } // Left key
+      if (key = 132) { do paddle.moveRight(); } // Right key
+
+      do Screen.clearScreen(); // Clear any previous drawing
+      do Screen.setColor(true); // Set our ink to black
+      do ball.draw();
+      do paddle.draw();
+      do ball.moveBall(paddle);
+
+      // Print score stuff
+      do Output.moveCursor(1, 1);
+      do Output.printString("Score: ");
+      do Output.printInt(score);
+    }
+
+    // Print game over message
+    do Screen.clearScreen();
+    do Output.moveCursor(10, 25);
+    do Output.printString("Game over!");
+    do Output.moveCursor(12, 25);
+    do Output.printString("Score: ");
+    do Output.printInt(score);
+
+    do ball.dispose();
+    return;
+  }
+}

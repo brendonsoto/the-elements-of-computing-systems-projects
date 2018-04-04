@@ -1,0 +1,40 @@
+class Paddle {
+  field int x, y; // X position
+  field int height, width;
+  field int canvasWidth;
+
+  constructor Paddle new() {
+    let height = 20;
+    let width = 40;
+    let x = 256 - (width / 2); // let x be the midway point of the paddle
+    let y = 255 - height;
+    let canvasWidth = 511 - width;
+    return this;
+  }
+
+  method void dispose() {
+     do Memory.deAlloc(this);
+     return;
+  }
+
+  method int getWidth() { return width; }
+  method int getX () { return x; }
+  method int getY () { return y; }
+
+  method void draw() {
+    do Screen.drawRectangle(x, y, x + width, y + height);
+    return;
+  }
+
+  method void moveLeft() {
+    if (x = 0) { return; }
+    let x = x - 1;
+    return;
+  }
+
+  method void moveRight() {
+    if (x = canvasWidth) { return; }
+    let x = x + 1;
+    return;
+  }
+}

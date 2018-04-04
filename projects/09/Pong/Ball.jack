@@ -1,0 +1,41 @@
+class Ball {
+  field int x, y; // X & Y coordinates on screen
+  field int size; // To be used for the height & width
+  field int xSpeed, ySpeed; // Used for direction
+
+  constructor Ball new(int inX, int inY, int inSize) {
+    let x = inX;
+    let y = inY;
+    let size = inSize;
+    let xSpeed = 1;
+    let ySpeed = 1;
+    return this;
+  }
+
+  method void dispose() {
+     do Memory.deAlloc(this);
+     return;
+  }
+
+  method int getX() { return x; }
+  method int getY() { return y; }
+  method int getYSpeed() { return ySpeed; }
+  method int getSize() { return size; }
+
+  method void draw() {
+    do Screen.drawRectangle(x, y, x + size, y + size);
+    return;
+  }
+
+  method void moveBall(Paddle paddle) {
+    let x = x + xSpeed;
+    let y = y + ySpeed;
+    if (x < 2) { let xSpeed = 1; }
+    if (x > (508 - size)) { let xSpeed = -1; }
+    if (y < 2) { let ySpeed = 1; }
+    if ((y > (paddle.getY() - size)) & ((x + size) > paddle.getX()) & (x < (paddle.getX() + paddle.getWidth()))) {
+      let ySpeed = -1;
+    }
+    return;
+  }
+}
