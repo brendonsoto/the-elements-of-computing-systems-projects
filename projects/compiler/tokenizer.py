@@ -2,11 +2,28 @@ keywords = ['class', 'constructor', 'function', 'method', 'field', 'static', 'va
 symbols = ['{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~']
 
 
-def tokenize(jack_file):
+def tokenize(program_arg, output_type):
+    import os, sys
+
+    print(program_arg)
+    if os.path.isfile(program_arg) and program_arg.endswith('.jack'):
+        tokenize_file(program_arg, output_type)
+    elif os.path.isdir(program_arg):
+        import glob
+        for jack_file in glob.glob("{0}/*.jack".format(program_arg)):
+            tokenize_file(jack_file, output_type)
+
+
+def tokenize_file(jack_file, output_type):
     tokens = get_tokens(jack_file)
-    tokens_as_xml = map(get_xml, tokens)
-    output_file = jack_file.replace('.jack', '_tokenized.xml')
-    write_output(output_file, tokens_as_xml)
+
+    if output_type is 'xml':
+        tokens_as_xml = map(get_xml, tokens)
+        output_file = jack_file.replace('.jack', '_tokenized.xml')
+        write_xml(output_file, tokens_as_xml)
+    else:
+        output_file = jack_file.replace('.jack', '_tokens')
+        write_output(output_file, tokens)
 
 
 def get_tokens(jack_file):
@@ -15,7 +32,8 @@ def get_tokens(jack_file):
         for line in f:
             if (not line.isspace() and
                     not line.startswith('//') and
-                    not line.startswith('/*')):
+                    not line.startswith('/*') and
+                    not line.startswith(' *')):
                 code_without_comments = remove_comments(line).strip()
                 tokens.extend(get_symbols(code_without_comments))
     return tokens
@@ -69,6 +87,8 @@ def get_symbol_code(symbol):
         code = '&lt;'
     elif symbol == '>':
         code = '&gt;'
+    elif symbol == '&':
+        code = '&amp;'
     return code
 
 
@@ -87,7 +107,7 @@ def get_xml(token):
     return xml
 
 
-def write_output(output_file, tokens_as_xml):
+def write_xml(output_file, tokens_as_xml):
     with open(output_file, 'w') as f:
         f.write("<tokens>\n")
         for token in tokens_as_xml:
@@ -96,7 +116,17 @@ def write_output(output_file, tokens_as_xml):
         f.write('</tokens>')
     print("All done writing XML to {0}".format(output_file))
 
+def write_output(output_file, tokens):
+    with open(output_file, 'w') as f:
+        for token in tokens:
+            f.write("{0}\n".format(token))
+    print("All done writing XML to {0}".format(output_file))
+
 
 if __name__ == '__main__':
     import sys
-    tokenize(sys.argv[1])
+
+    if len(sys.argv) > 2:
+        tokenize(sys.argv[1], sys.argv[2])
+
+    tokenize(sys.argv[1], '')
